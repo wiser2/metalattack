@@ -703,6 +703,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--spark); out
     showOverlay({ title: "Creating room...", buttons: [{ label: "Cancel", fn: toMenu, ghost: true }] });
     var pr;
     try { pr = new Peer("metal-attack-" + roomCode); } catch (e) { netFail("Could not start online play in this browser."); return; }
+    clearTimeout(joinTimer);
+    joinTimer = setTimeout(function () {
+      if (peer === pr && !pr.open) netFail("Could not reach the matchmaking server. Check your connection, or try again in a minute.");
+    }, 12000);
     peer = pr;
     pr.on("open", function () {
       if (peer !== pr) return;
@@ -729,12 +733,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--spark); out
     showOverlay({ title: "Joining " + code + "...", buttons: [{ label: "Cancel", fn: toMenu, ghost: true }] });
     var pr;
     try { pr = new Peer(); } catch (e) { netFail("Could not start online play in this browser."); return; }
+    clearTimeout(joinTimer);
+    joinTimer = setTimeout(function () {
+      if (peer !== pr || connected) return;
+      netFail(pr.open
+        ? "Could not reach that room. Check the code, and make sure your friend's room is still open."
+        : "Could not reach the matchmaking server. Check your connection, or try again in a minute.");
+    }, 15000);
     peer = pr;
     pr.on("open", function () {
       if (peer !== pr) return;
       var c = pr.connect("metal-attack-" + code, { serialization: "json" });
       conn = c; wire(c);
-      joinTimer = setTimeout(function () { if (!connected && peer === pr) netFail("Could not reach that room. Check the code and try again."); }, 12000);
     });
     pr.on("error", function (err) { if (peer === pr) netFail(errText(err)); });
   }
